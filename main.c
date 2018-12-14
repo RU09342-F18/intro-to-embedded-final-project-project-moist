@@ -5,53 +5,63 @@
  * main.c
  */
 
-void UARTInitialization()
+char greeting[9] = "#test 20\n"; // Initial Greeting you should see upon properly connecting your Launchpad
+unsigned int i = 0;
+
+
 
 int main(void)
 {
 
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
 
-    // UART Setup
-    P4SEL |= BIT4+BIT5;
-    // TX
-    P3SEL |= BIT3;                              // Enable TX on pin 3.3
+   // memcpy(greeting, "hello", sizeof(greeting));
 
-    // RX
-    P3SEL |= BIT4;                              // Enable RX on pin 3.4
-
-    // UART Initialization
-    UCA1CTL1 |= UCSWRST;                        // **Put state machine in reset**
-    UCA1CTL1 |= UCSSEL_2;
-    UCA1BR0 = 104;
-    UCA1BR1 = 0;
-    UCA1MCTL |= UCBRS_1 + UCBRF_0;
-    UCA1CTL1 &= ~UCSWRST;                               // **Initialize USCI state machine**
-    UCA1IE |= UCRXIE;                                   // Enable Interrupt on RX
+    // UART Initialization at 115200 Baud
+    P4SEL |= BIT5+BIT4;                       // P4.4,5 = USCI_A1 TXD/RXD
+    UCA1CTL1 |= UCSWRST;                      // **Put state machine in reset**
+    UCA1CTL1 |= UCSSEL_2;                     // SMCLK
+    UCA1BR0 = 9;                              // 1MHz 115200 (see User's Guide)
+    UCA1BR1 = 0;                              // 1MHz 115200
+    UCA1MCTL |= UCBRS_1 + UCBRF_0;            // Modulation UCBRSx=6, UCBRFx=0
+    UCA1CTL1 &= ~UCSWRST;                     // **Initialize USCI state machine**
+    UCA1IE |= UCRXIE;                         // Enable USCI_A1 RX interrupt
     UCA1IFG &= ~UCRXIFG;                                // Clear Interrupt Flag
 
-    // ADC Initializtion
+   /*// ADC Initializtion
     ADC12CTL0 = ADC12SHT02 + ADC12ON;         // Sampling time, ADC12 on
     ADC12CTL1 = ADC12SHP + ADC12DIV_7+ ADC12SSEL_1;                     // Use sampling timer
     ADC12IE = 0x01;                           // Enable interrupt
     ADC12CTL0 |= ADC12ENC;
     P6SEL |= 0x01;                            // P6.0 ADC option select
-    P1DIR |= 0x01;                            // P1.0 output
+    P1DIR |= 0x01;                            // P1.0 output*/
+int newLineFound = 0;
 
-    while (1)
-    {
-         ADC12CTL0 |= ADC12SC;                   // Start sampling/conversion
+while(newLineFound == 0)
+{
+    UCA1TXBUF = greeting[i];                  // TX -> RXed character
 
+    while (!(UCA1IFG&UCTXIFG));                 // USCI_A1 TX buffer ready?
 
-         __bis_SR_register(LPM0_bits + GIE);     // LPM0, ADC12_ISR will force exit
-         __no_operation();                       // For debugger
-    }
+    if(greeting[i] == '\n')
+        newLineFound = 1;
+
+    i++;
+
+    //if(i > 9)
+        //i =0;
+}
+
+    __bis_SR_register(LPM0_bits + GIE);     // LPM0, ADC12_ISR will force exit
+    __no_operation();                       // For debugger
+
 
 }
 
 
-    #pragma vector = ADC12_VECTOR
-    __interrupt void ADC12_ISR(void)
+
+/*#pragma vector = ADC12_VECTOR
+__interrupt void ADC12_ISR(void)
     {
       switch(__even_in_range(ADC12IV,34))
       {
@@ -78,4 +88,9 @@ int main(void)
       case 34: break;                           // Vector 34:  ADC12IFG14
       default: break;
       }
-    }
+}*/
+
+
+
+
+
