@@ -33,6 +33,9 @@ int main(void)
 
     // UART Initialization at 115200 Baud
     P4SEL |= BIT5+BIT4;                       // P4.4,5 = USCI_A1 TXD/RXD
+
+    //P3SEL |= BIT3 + BIT4;                     // P3.3,4 = USCI_A0 TXD/RXD
+
     UCA1CTL1 |= UCSWRST;                      // **Put state machine in reset**
     UCA1CTL1 |= UCSSEL_2;                     // SMCLK
     UCA1BR0 = 9;                              // 1MHz 115200 (see User's Guide)
@@ -65,7 +68,6 @@ int main(void)
 }
 
 
-
 #pragma vector = ADC12_VECTOR
 __interrupt void ADC12_ISR(void)
     {
@@ -83,7 +85,7 @@ __interrupt void ADC12_ISR(void)
 
               if(moistVal < 30)
                   P1OUT &= ~BIT2;
-              else
+              else if(moistVal > 50)
                   P1OUT |= BIT2;
 
               __bic_SR_register_on_exit(LPM0_bits);   // Exit active CPU
